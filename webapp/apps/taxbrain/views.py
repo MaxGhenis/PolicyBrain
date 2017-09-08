@@ -52,6 +52,8 @@ from ..constants import (DIAGNOSTIC_TOOLTIP, DIFFERENCE_TOOLTIP,
                          START_YEARS)
 
 
+from django.conf import settings
+
 tcversion_info = taxcalc._version.get_versions()
 
 taxcalc_version = ".".join([tcversion_info['version'], tcversion_info['full'][:6]])
