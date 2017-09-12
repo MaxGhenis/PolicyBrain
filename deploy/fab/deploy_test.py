@@ -28,6 +28,10 @@ from fabric.contrib.files import (
     sed
 )
 
+env.host_string = "0.0.0.0:32796"
+env.user = "ubuntu"
+env.password = "ubuntu"
+
 import logging
 from copy_deploy_repo import copy_deploy_repo, check_unmodified
 from redeploy import cli as deploy_versions_cli, main as reset_server_main
@@ -41,30 +45,24 @@ def test_ssh2():
         '''
     run('pwd')
 
-def fix_sshd_config():
-    '''root needs an actual shell, so fix the sshd_config.'''
-    config_file = '/etc/ssh/sshd_config'
-    uncomment(config_file, r'^.*PermitRootLogin yes', use_sudo=True)
-    comment(config_file, r'^PermitRootLogin forced-commands-only', use_sudo=True)
-
 def apt_installs():
-    run("apt-get install software-properties -common python-software-properties")
-    run("add-apt-repository -y ppa:saltstack/salt")
-    run("apt-get update -y")
+    sudo("apt-get install -y software-properties-common python-software-properties")
+    sudo("add-apt-repository -y ppa:saltstack/salt")
+    sudo("apt-get update -y")
     packages = ['salt-master', 'salt-minion', 'salt-syndic', 'git', 'tig',
                 'silversearcher-ag', 'python-qt4']
-    run("apt-get install -y {}".format(' '.join(packages)))
+    sudo("apt-get install -y {}".format(' '.join(packages)))
 
 
 def install_deploy_repo():
-    run('rm -rf ~/deploy')
+    sudo('rm -rf ~/deploy')
     run('mkdir ~/deploy')
     copy_deploy_repo(sudo, put, run)
 
 
 def install_ogusa_repo():
     url = 'https://github.com/open-source-economics/OG-USA'
-    run('rm -rf ~/OG-USA')
+    sudo('rm -rf ~/OG-USA')
     if os.environ.get('OGUSA_GIT_BRANCH'):
         run("git clone {} --branch {}".format(url, os.environ.get('OGUSA_GIT_BRANCH')))
     else:
@@ -83,14 +81,23 @@ def convenience_aliases():
 
 def run_salt():
     run("ln -s ~/deploy/fab/salt ~/salt")
-    run('/usr/bin/salt-call state.highstate --retcode-passthrough --log-level=debug --config-dir="$HOME/deploy/fab/salt"')
+    sudo('sudo /usr/bin/salt-call state.highstate --retcode-passthrough --log-level=debug --config-dir="$HOME/deploy/fab/salt"')
 
+
+def _env_str(args):
+    s = []
+    for k in dir(args):
+        val = getattr(args, k)
+        if any(tok in k.lower() for tok in ('install', 'method' 'version')):
+            s.append('{}="{}"'.format(k.upper(), val))
+    return " ".join(s)
 
 def reset_server():
     e = _env_str(DEPLOYMENT_VERSIONS_ARGS)
     command = "{} source /home/ubuntu/reset_server.sh".format(e)
     print('Running', command)
     run(command, shell=True, shell_escape=False)
+
 
 
 execute(test_ssh2)

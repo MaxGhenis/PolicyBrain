@@ -1,11 +1,17 @@
 FROM ubuntu:15.04
 
-RUN apt-get update
+RUN adduser ubuntu
+RUN adduser ubuntu sudo
+RUN echo "ubuntu:ubuntu" | chpasswd
 
-RUN apt-get -yq install openssh-server; \
-  mkdir -p /var/run/sshd; \
-  mkdir /root/.ssh && chmod 700 /root/.ssh; \
-  touch /root/.ssh/authorized_keys
+RUN apt-get update && apt-get -yq install openssh-server \
+    sudo \
+    software-properties-common \
+    python-software-properties
+
+RUN mkdir -p /var/run/sshd
+RUN mkdir /home/ubuntu/.ssh && chmod 700 /home/ubuntu/.ssh
+RUN touch /home/ubuntu/.ssh/authorized_keys
 
 EXPOSE 22
 
