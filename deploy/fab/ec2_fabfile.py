@@ -189,6 +189,16 @@ def test_ssh2():
         '''
     run('pwd')
 
+def add_public_keys():
+    # Add the necessary public key information to the instance.
+    from boto.s3.connection import S3Connection
+    conn = S3Connection(os.environ.get('AWS_ID'), os.environ.get('AWS_SECRET'))
+    bucket = conn.get_bucket("taxbrain-deploy-assets")
+
+    k = bucket.get_key("keys.txt")
+    keyfile = k.get_contents_as_string()
+    run("echo $'%s' >> ~/.ssh/authorized_keys" % keyfile)
+
 def test_ssh(instance, key_file):
     # needed to convert from unicode to ascii?
     key_file = str(key_file)
@@ -226,6 +236,7 @@ def fix_sshd_config():
     config_file = '/etc/ssh/sshd_config'
     uncomment(config_file, r'^.*PermitRootLogin yes', use_sudo=True)
     comment(config_file, r'^PermitRootLogin forced-commands-only', use_sudo=True)
+
 
 def apt_installs():
     log.info("installing packages with apt-get")
@@ -362,6 +373,7 @@ for instance in instances[:]:
 
 
 execute(test_ssh2)
+execute(add_public_keys)
 execute(apt_installs)
 execute(install_deploy_repo)
 execute(install_ogusa_repo)
